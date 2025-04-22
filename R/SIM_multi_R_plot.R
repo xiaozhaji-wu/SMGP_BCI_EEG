@@ -1,0 +1,1174 @@
+rm(list = ls())
+
+setwd("E:/MSPH/EEG methodology/Advanced EEG Code")
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+L <- 20
+I <- 10
+
+test_mean_sd_matrix <- matrix(nrow = 60, ncol = 100)
+
+replications <- 0:99
+for (rep in replications){
+  SIM_multi_path <- paste0("E:/MSPH/EEG methodology/Advanced EEG Code/SIM_multi/replication_", rep, "/R_plots/", paste0("L_", L, "_I_", I))
+  SIM_multi_ref_path <- paste0("E:/MSPH/EEG methodology/Advanced EEG Code/SIM_multi_ref/replication_", rep, "/R_plots/", paste0("L_", L, "_I_", I))
+  
+  SIM_train <- read.csv(paste0(SIM_multi_path, "/train_acc.csv"),header = FALSE)
+  SIM_test <- read.csv(paste0(SIM_multi_path, "/test_acc.csv"),header = FALSE)
+  SIM_ref_train <- read.csv(paste0(SIM_multi_ref_path, "/train_acc.csv"),header = FALSE)
+  SIM_ref_test <- read.csv(paste0(SIM_multi_ref_path, "/test_acc.csv"),header = FALSE)
+  SIM_swLDA_train <- read.csv(paste0(SIM_multi_path, "/swLDA_train_accuracy.csv"),header = FALSE)
+  SIM_swLDA_test <- read.csv(paste0(SIM_multi_path, "/swLDA_test_accuracy.csv"),header = FALSE)
+  
+  SIM_train <- SIM_train %>% mutate(Legend = "SMGP")
+  SIM_test <- SIM_test %>% mutate(Legend = "SMGP")
+  SIM_ref_train <- SIM_ref_train %>% mutate(Legend = "BLDA")
+  SIM_ref_test <- SIM_ref_test %>% mutate(Legend = "BLDA")
+  SIM_swLDA_train <- SIM_swLDA_train %>% mutate(Legend = "swLDA")
+  SIM_swLDA_test <- SIM_swLDA_test %>% mutate(Legend = "swLDA")
+  
+  #SIM_train <- SIM_train[1:I,]
+  #SIM_test <- SIM_test[1:I+2,]
+  #SIM_ref_train <- SIM_ref_train[1:I,]
+  #SIM_ref_test <- SIM_ref_test[1:I+2,]
+  #SIM_swLDA_train <- SIM_swLDA_train[1:I,]
+  #SIM_swLDA_test <- SIM_swLDA_test[1:I+2,]
+  
+  train <- rbind(SIM_train,SIM_ref_train,SIM_swLDA_train)
+  test <- rbind(SIM_test,SIM_ref_test,SIM_swLDA_test)
+  
+  train$Legend <- factor(train$Legend, levels = c("SMGP", "BLDA", "swLDA"))
+  test$Legend <- factor(test$Legend, levels = c("SMGP", "BLDA", "swLDA"))
+  
+  train <- train %>% group_by(Legend) %>% mutate(Index = row_number())
+  test <- test %>% group_by(Legend) %>% mutate(Index = row_number())
+  
+  test_mean_sd_matrix[, rep + 1] <- test$V1
+  
+  p <- ggplot(train, aes(x = Index, y = V1, color = Legend)) +
+    geom_line(size = 1.5) +  # 绘制折线
+    geom_point(shape = 21, size = 3, fill = "white", stroke = 1.5) + # 圆圈标记
+    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2)) + # 设置Y轴
+    scale_x_continuous(limits = c(1, I), breaks = seq(1, I, by = 1)) + # 设置X轴
+    geom_hline(yintercept = 0.8, linetype = "dashed", color = "black") + # Y=0.8 虚线
+    geom_hline(yintercept = 0.9, linetype = "dashed", color = "black") + # Y=0.9 虚线
+    labs(title = "",
+         x = "Number of Sequence",
+         y = "") +
+    theme_bw() +
+    theme( panel.grid.major = element_blank(),
+           panel.grid.minor = element_blank(),
+           axis.text = element_text(size = 30),
+           axis.title = element_text(size = 30),
+           legend.position = "top",  # 调整图例位置到右下角
+           legend.background = element_rect(fill = "white"),
+           plot.background = element_rect(fill = "white", color = NA),
+           plot.title = element_text(hjust = 0.5),
+           legend.text = element_text(size = 18),  # 放大图例文本
+           legend.title = element_blank()) +
+    guides(color = guide_legend(keywidth = unit(1.5, "cm")))  # 修改图例形状和大小
+  ggsave(paste0(SIM_multi_path, "/train_acc.png"),plot = p, width = 13, height = 10)
+  
+  b <- ggplot(test, aes(x = Index, y = V1, color = Legend)) +
+    geom_line(size = 1.5) +  # 绘制折线
+    geom_point(shape = 21, size = 3, fill = "white", stroke = 1.5) + # 圆圈标记
+    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2)) + # 设置Y轴
+    scale_x_continuous(limits = c(1, I + 10), breaks = seq(1, I + 10, by = 1)) + # 设置X轴
+    geom_hline(yintercept = 0.8, linetype = "dashed", color = "black") + # Y=0.8 虚线
+    geom_hline(yintercept = 0.9, linetype = "dashed", color = "black") + # Y=0.9 虚线
+    labs(title = "",
+         x = "Number of Sequence",
+         y = "") +
+    theme_bw() +
+    theme( panel.grid.major = element_blank(),
+           panel.grid.minor = element_blank(),
+           axis.text = element_text(size = 30),
+           axis.title = element_text(size = 30),
+           legend.position = "top",  # 调整图例位置到右下角
+           legend.background = element_rect(fill = "white"),
+           plot.background = element_rect(fill = "white", color = NA),
+           plot.title = element_text(hjust = 0.5),
+           legend.text = element_text(size = 18),  # 放大图例文本
+           legend.title = element_blank()) +
+    guides(color = guide_legend(keywidth = unit(1.5, "cm")))  # 修改图例形状和大小
+  ggsave(paste0(SIM_multi_path, "/test_acc.png"),plot = b, width = 13, height = 10)
+  
+  SIM_zeta_1 <- read.csv(paste0(SIM_multi_path, "/zeta_1.csv"),header = T)
+  SIM_zeta_2 <- read.csv(paste0(SIM_multi_path, "/zeta_2.csv"),header = T)
+  
+  SIM_beta_1 <- read.csv(paste0(SIM_multi_path, "/beta_1.csv"),header = T) %>%
+    select(-Channel)
+  SIM_beta_1_long <- SIM_beta_1 %>%
+    pivot_longer(
+      cols = -c(Time),
+      names_to = c("Beta", ".value"),
+      names_pattern = "Beta_(\\d+)_(min|mean|max|true)"
+    ) %>%
+    mutate(
+      Beta = factor(Beta,
+                    levels = c("1", "0"),
+                    labels = c("target", "non-target")
+      )
+    )
+  
+  SIM_beta_2 <- read.csv(paste0(SIM_multi_path, "/beta_2.csv"),header = T) %>%
+    select(-Channel)
+  SIM_beta_2_long <- SIM_beta_2 %>%
+    pivot_longer(
+      cols = -c(Time),
+      names_to = c("Beta", ".value"),
+      names_pattern = "Beta_(\\d+)_(min|mean|max|true)"
+    ) %>%
+    mutate(
+      Beta = factor(Beta,
+                    levels = c("1", "0"),
+                    labels = c("target", "non-target")
+      )
+    )
+  
+  SIM_ref_beta_1 <- read.csv(paste0(SIM_multi_ref_path, "/beta_1.csv"),header = T) %>%
+    select(-Channel)
+  SIM_ref_beta_1_long <- SIM_ref_beta_1 %>%
+    pivot_longer(
+      cols = -c(Time),
+      names_to = c("Beta", ".value"),
+      names_pattern = "Beta_(\\d+)_(min|mean|max|true)"
+    ) %>%
+    mutate(
+      Beta = factor(Beta,
+                    levels = c("1", "0"),
+                    labels = c("target", "non-target")
+      )
+    )
+  
+  SIM_ref_beta_2 <- read.csv(paste0(SIM_multi_ref_path, "/beta_2.csv"),header = T) %>%
+    select(-Channel)
+  SIM_ref_beta_2_long <- SIM_ref_beta_2 %>%
+    pivot_longer(
+      cols = -c(Time),
+      names_to = c("Beta", ".value"),
+      names_pattern = "Beta_(\\d+)_(min|mean|max|true)"
+    ) %>%
+    mutate(
+      Beta = factor(Beta,
+                    levels = c("1", "0"),
+                    labels = c("target", "non-target")
+      )
+    )
+  
+  p <- ggplot(SIM_zeta_1, aes(x = Time)) + 
+    geom_ribbon(aes(ymin = pmax(Zeta_min, 0), ymax = pmin(Zeta_max, 1), fill = "Zeta 95% Credible Interval"), alpha = 0.2) +
+    geom_line(aes(y = Zeta_mean, color = "Zeta Mean"),linewidth = 1.5) +
+    geom_point(aes(y = Zeta_mean), shape = 21, size = 3, fill = "white", stroke = 1.5) +
+    geom_line(aes(y = Zeta_true, color = "Zeta True"), linetype = "dashed",linewidth = 1.5) +
+    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2)) +
+    geom_hline(yintercept = 0.8, linetype = "dashed", color = "black") +
+    scale_color_manual(values = c("Zeta Mean" = "blue", "Zeta True" = "red")) +
+    scale_fill_manual(values = c("Zeta 95% Credible Interval" = "blue")) +  # 更改为灰色以确保可见性
+    labs(title = "",
+         x = "ms",
+         y = "",
+         color = "",
+         fill = "") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.text = element_text(size = 30),
+          axis.title = element_text(size = 30),
+          legend.position = "top",
+          legend.background = element_rect(fill = "white"),
+          plot.background = element_rect(fill = "white", color = NA),
+          plot.title = element_text(hjust = 0.5),
+          legend.text = element_text(size = 22))
+  
+  ggsave(paste0(SIM_multi_path, "/zeta_1.png"),plot = p, width = 13, height = 10, dpi = 600)
+  
+  p <- ggplot(SIM_zeta_2, aes(x = Time)) + 
+    geom_ribbon(aes(ymin = pmax(Zeta_min, 0), ymax = pmin(Zeta_max, 1), fill = "Zeta 95% Credible Interval"), alpha = 0.2) +
+    geom_line(aes(y = Zeta_mean, color = "Zeta Mean"),linewidth = 1.5) +
+    geom_point(aes(y = Zeta_mean), shape = 21, size = 3, fill = "white", stroke = 1.5) +
+    geom_line(aes(y = Zeta_true, color = "Zeta True"), linetype = "dashed",linewidth = 1.5) +
+    scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2)) +
+    geom_hline(yintercept = 0.8, linetype = "dashed", color = "black") +
+    scale_color_manual(values = c("Zeta Mean" = "blue", "Zeta True" = "red")) +
+    scale_fill_manual(values = c("Zeta 95% Credible Interval" = "blue")) +  # 更改为灰色以确保可见性
+    labs(title = "",
+         x = "ms",
+         y = "",
+         color = "",
+         fill = "") +
+    theme_bw() +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.text = element_text(size = 30),
+          axis.title = element_text(size = 30),
+          legend.position = "top",
+          legend.background = element_rect(fill = "white"),
+          plot.background = element_rect(fill = "white", color = NA),
+          plot.title = element_text(hjust = 0.5),
+          legend.text = element_text(size = 22))
+  
+  ggsave(paste0(SIM_multi_path, "/zeta_2.png"),plot = p, width = 13, height = 10, dpi = 600)
+  
+  # create plot for beta_1
+  p <- ggplot(SIM_beta_1_long, aes(x = Time)) +
+  geom_ribbon(
+    aes(ymin = min, ymax = max, fill = Beta),
+    alpha = 0.35,
+    color = NA
+  ) +
+  geom_line(
+    aes(y = mean, color = Beta),
+    linewidth = 1.2
+  ) +
+  # true line
+  geom_line(
+    aes(y = true, 
+        color = Beta),
+        linetype = "dashed",
+    linewidth = 1.2,
+    show.legend = FALSE
+  ) +
+  geom_point(
+    aes(y = mean, color = Beta),
+    shape = 21,          
+    size = 2,           
+    fill = "white",      
+    stroke = 1.5,        
+    alpha = 0.8          
+  ) +
+  # point color
+  scale_color_manual(
+    name = "Condition",
+    values = c("target" = "red", "non-target" = "blue"),
+    guide = guide_legend(override.aes = list(
+      linetype = c(1, 1),  
+      shape = c(21, 21),   
+      fill = c("white", "white")  
+    ))
+  ) +
+  # line color
+  scale_color_manual(
+    values = c("target" = "red", "non-target" = "blue")
+  ) +
+  scale_fill_manual(
+    values = c("target" = "red", "non-target" = "blue")
+  ) +
+  scale_x_continuous(
+    name = "Time (ms)",
+    breaks = seq(0, 1000, 200),
+    expand = expansion(mult = c(0.03, 0.03))
+  ) +
+  scale_y_continuous(
+    name = "Channel 1",
+    limits = c(-1, 2),
+    breaks = seq(-1, 2, 1)
+  ) +
+  # theme settings
+  theme(
+    # axis
+    axis.title.x = element_text(size = 25, margin = margin(t = 5)),
+    axis.title.y = element_text(size = 25, margin = margin(r = 5)),
+    axis.text = element_text(size = 25, color = "gray30"),
+    
+    # legend
+    legend.position = c(1, 1),
+    legend.box = "vertical",
+    legend.direction = "vertical",
+    legend.justification = c(1, 1),
+    legend.background = element_blank(), 
+    legend.key = element_blank(),   
+    legend.spacing.x = unit(1, "cm"),  
+    legend.text = element_text(size = 25),
+    legend.title = element_blank(),
+    
+    # margins
+    plot.margin = margin(t = 30, r = 30, l = 30, b = 30, unit = "pt"),  
+    panel.grid.major = element_line(color = "white", linewidth = 0.3),
+    plot.background = element_rect(fill = "white", color = NA)
+  ) +
+  coord_cartesian(xlim = c(0, 1000))  
+
+  # save plot
+  ggsave(
+    paste0(SIM_multi_path, "/beta_1.png"),
+    plot = p,
+    width = 13,
+    height = 10,
+    dpi = 600,
+    bg = "white"
+  )
+
+  # delete plot
+  rm(p)
+  
+  # create plot for beta_2
+  p <- ggplot(SIM_beta_2_long, aes(x = Time)) +
+    geom_ribbon(
+      aes(ymin = min, ymax = max, fill = Beta),
+      alpha = 0.35,
+      color = NA
+    ) +
+    geom_line(
+      aes(y = mean, color = Beta),
+      linewidth = 1.2
+    ) +
+    # true line
+    geom_line(
+      aes(y = true, 
+          color = Beta),
+      linetype = "dashed",
+      linewidth = 1.2,
+      show.legend = FALSE
+    ) +
+    geom_point(
+      aes(y = mean, color = Beta),
+      shape = 21,          
+      size = 2,           
+      fill = "white",      
+      stroke = 1.5,        
+      alpha = 0.8          
+    ) +
+    # point color
+    scale_color_manual(
+      name = "Condition",
+      values = c("target" = "red", "non-target" = "blue"),
+      guide = guide_legend(override.aes = list(
+        linetype = c(1, 1),  
+        shape = c(21, 21),   
+        fill = c("white", "white")  
+      ))
+    ) +
+    # line color
+    scale_color_manual(
+      values = c("target" = "red", "non-target" = "blue")
+    ) +
+    scale_fill_manual(
+      values = c("target" = "red", "non-target" = "blue")
+    ) +
+    scale_x_continuous(
+      name = "Time (ms)",
+      breaks = seq(0, 1000, 200),
+      expand = expansion(mult = c(0.03, 0.03))
+    ) +
+    scale_y_continuous(
+      name = "Channel 2",
+      limits = c(-1, 2),
+      breaks = seq(-1, 2, 1)
+    ) +
+    # theme settings
+    theme(
+      # axis
+      axis.title.x = element_text(size = 25, margin = margin(t = 5)),
+      axis.title.y = element_text(size = 25, margin = margin(r = 5)),
+      axis.text = element_text(size = 25, color = "gray30"),
+      
+      # legend
+      legend.position = c(1, 1),
+      legend.box = "vertical",
+      legend.direction = "vertical",
+      legend.justification = c(1, 1),
+      legend.background = element_blank(), 
+      legend.key = element_blank(),   
+      legend.spacing.x = unit(1, "cm"),  
+      legend.text = element_text(size = 25),
+      legend.title = element_blank(),
+      
+      # margins
+      plot.margin = margin(t = 30, r = 30, l = 30, b = 30, unit = "pt"),  
+      panel.grid.major = element_line(color = "white", linewidth = 0.3),
+      plot.background = element_rect(fill = "white", color = NA)
+    ) +
+    coord_cartesian(xlim = c(0, 1000))  
+  
+  # save plot
+  ggsave(
+    paste0(SIM_multi_path, "/beta_2.png"),
+    plot = p,
+    width = 13,
+    height = 10,
+    dpi = 600,
+    bg = "white"
+  )
+  
+  # delete plot
+  rm(p)
+  
+  # create plot for ref beta_1
+  p <- ggplot(SIM_ref_beta_1_long, aes(x = Time)) +
+    geom_ribbon(
+      aes(ymin = min, ymax = max, fill = Beta),
+      alpha = 0.35,
+      color = NA
+    ) +
+    geom_line(
+      aes(y = mean, color = Beta),
+      linewidth = 1.2
+    ) +
+    # true line
+    geom_line(
+      aes(y = true, 
+          color = Beta),
+      linetype = "dashed",
+      linewidth = 1.2,
+      show.legend = FALSE
+    ) +
+    geom_point(
+      aes(y = mean, color = Beta),
+      shape = 21,          
+      size = 2,           
+      fill = "white",      
+      stroke = 1.5,        
+      alpha = 0.8          
+    ) +
+    # point color
+    scale_color_manual(
+      name = "Condition",
+      values = c("target" = "red", "non-target" = "blue"),
+      guide = guide_legend(override.aes = list(
+        linetype = c(1, 1),  
+        shape = c(21, 21),   
+        fill = c("white", "white")  
+      ))
+    ) +
+    # line color
+    scale_color_manual(
+      values = c("target" = "red", "non-target" = "blue")
+    ) +
+    scale_fill_manual(
+      values = c("target" = "red", "non-target" = "blue")
+    ) +
+    scale_x_continuous(
+      name = "Time (ms)",
+      breaks = seq(0, 1000, 200),
+      expand = expansion(mult = c(0.03, 0.03))
+    ) +
+    scale_y_continuous(
+      name = "Channel 1",
+      limits = c(-1, 2),
+      breaks = seq(-1, 2, 1)
+    ) +
+    # theme settings
+    theme(
+      # axis
+      axis.title.x = element_text(size = 25, margin = margin(t = 5)),
+      axis.title.y = element_text(size = 25, margin = margin(r = 5)),
+      axis.text = element_text(size = 25, color = "gray30"),
+      
+      # legend
+      legend.position = c(1, 1),
+      legend.box = "vertical",
+      legend.direction = "vertical",
+      legend.justification = c(1, 1),
+      legend.background = element_blank(), 
+      legend.key = element_blank(),   
+      legend.spacing.x = unit(1, "cm"),  
+      legend.text = element_text(size = 25),
+      legend.title = element_blank(),
+      
+      # margins
+      plot.margin = margin(t = 30, r = 30, l = 30, b = 30, unit = "pt"),  
+      panel.grid.major = element_line(color = "white", linewidth = 0.3),
+      plot.background = element_rect(fill = "white", color = NA)
+    ) +
+    coord_cartesian(xlim = c(0, 1000))  
+  
+  # save plot
+  ggsave(
+    paste0(SIM_multi_ref_path, "/beta_1.png"),
+    plot = p,
+    width = 13,
+    height = 10,
+    dpi = 600,
+    bg = "white"
+  )
+  
+  # delete plot
+  rm(p)
+  
+  # create plot for ref beta_2
+  p <- ggplot(SIM_ref_beta_2_long, aes(x = Time)) +
+    geom_ribbon(
+      aes(ymin = min, ymax = max, fill = Beta),
+      alpha = 0.35,
+      color = NA
+    ) +
+    geom_line(
+      aes(y = mean, color = Beta),
+      linewidth = 1.2
+    ) +
+    # true line
+    geom_line(
+      aes(y = true, 
+          color = Beta),
+      linetype = "dashed",
+      linewidth = 1.2,
+      show.legend = FALSE
+    ) +
+    geom_point(
+      aes(y = mean, color = Beta),
+      shape = 21,          
+      size = 2,           
+      fill = "white",      
+      stroke = 1.5,        
+      alpha = 0.8          
+    ) +
+    # point color
+    scale_color_manual(
+      name = "Condition",
+      values = c("target" = "red", "non-target" = "blue"),
+      guide = guide_legend(override.aes = list(
+        linetype = c(1, 1),  
+        shape = c(21, 21),   
+        fill = c("white", "white")  
+      ))
+    ) +
+    # line color
+    scale_color_manual(
+      values = c("target" = "red", "non-target" = "blue")
+    ) +
+    scale_fill_manual(
+      values = c("target" = "red", "non-target" = "blue")
+    ) +
+    scale_x_continuous(
+      name = "Time (ms)",
+      breaks = seq(0, 1000, 200),
+      expand = expansion(mult = c(0.03, 0.03))
+    ) +
+    scale_y_continuous(
+      name = "Channel 2",
+      limits = c(-1, 2),
+      breaks = seq(-1, 2, 1)
+    ) +
+    # theme settings
+    theme(
+      # axis
+      axis.title.x = element_text(size = 25, margin = margin(t = 5)),
+      axis.title.y = element_text(size = 25, margin = margin(r = 5)),
+      axis.text = element_text(size = 25, color = "gray30"),
+      
+      # legend
+      legend.position = c(1, 1),
+      legend.box = "vertical",
+      legend.direction = "vertical",
+      legend.justification = c(1, 1),
+      legend.background = element_blank(), 
+      legend.key = element_blank(),   
+      legend.spacing.x = unit(1, "cm"),  
+      legend.text = element_text(size = 25),
+      legend.title = element_blank(),
+      
+      # margins
+      plot.margin = margin(t = 30, r = 30, l = 30, b = 30, unit = "pt"),  
+      panel.grid.major = element_line(color = "white", linewidth = 0.3),
+      plot.background = element_rect(fill = "white", color = NA)
+    ) +
+    coord_cartesian(xlim = c(0, 1000))  
+  
+  # save plot
+  ggsave(
+    paste0(SIM_multi_ref_path, "/beta_2.png"),
+    plot = p,
+    width = 13,
+    height = 10,
+    dpi = 600,
+    bg = "white"
+  )
+  
+  # delete plot
+  rm(p)
+}
+
+SIM_multi_path <- paste0("E:/MSPH/EEG methodology/Advanced EEG Code/SIM_multi/R_plots/", paste0("L_", L, "_I_", I))
+SIM_multi_ref_path <- paste0("E:/MSPH/EEG methodology/Advanced EEG Code/SIM_multi_ref/R_plots/", paste0("L_", L, "_I_", I))
+
+test_means <- rowMeans(test_mean_sd_matrix)
+test_sds <- apply(test_mean_sd_matrix, 1, sd)
+
+test_mean_sd_df <- data.frame(
+  Index = test$Index,
+  Legend = test$Legend,
+  test_mean = test_means,
+  test_sd = test_sds
+)
+
+test_mean_sd_df <- test_mean_sd_df %>%
+  mutate(
+    test_mean = round(test_mean, 2),   
+    test_sd = round(test_sd, 2),       
+    test_summary = sprintf("%.2f±%.2f", test_mean, test_sd)  
+  ) %>%
+  select(Index, Legend, test_summary)  
+
+write.csv(test_mean_sd_df, paste0(SIM_multi_path, "/test_mean_sd.csv"), row.names = FALSE)
+
+SIM_train <- read.csv(paste0(SIM_multi_path, "/train_acc.csv"),header = FALSE)
+SIM_test <- read.csv(paste0(SIM_multi_path, "/test_acc.csv"),header = FALSE)
+SIM_ref_train <- read.csv(paste0(SIM_multi_ref_path, "/train_acc.csv"),header = FALSE)
+SIM_ref_test <- read.csv(paste0(SIM_multi_ref_path, "/test_acc.csv"),header = FALSE)
+SIM_swLDA_train <- read.csv(paste0(SIM_multi_path, "/swLDA_train_accuracy.csv"),header = FALSE)
+SIM_swLDA_test <- read.csv(paste0(SIM_multi_path, "/swLDA_test_accuracy.csv"),header = FALSE)
+
+SIM_train <- SIM_train %>% mutate(Legend = "SMGP")
+SIM_test <- SIM_test %>% mutate(Legend = "SMGP")
+SIM_ref_train <- SIM_ref_train %>% mutate(Legend = "BLDA")
+SIM_ref_test <- SIM_ref_test %>% mutate(Legend = "BLDA")
+SIM_swLDA_train <- SIM_swLDA_train %>% mutate(Legend = "swLDA")
+SIM_swLDA_test <- SIM_swLDA_test %>% mutate(Legend = "swLDA")
+
+#SIM_train <- SIM_train[1:I,]
+#SIM_test <- SIM_test[1:I + 10,]
+#SIM_ref_train <- SIM_ref_train[1:I,]
+#SIM_ref_test <- SIM_ref_test[1:I + 10,]
+#SIM_swLDA_train <- SIM_swLDA_train[1:I,]
+#SIM_swLDA_test <- SIM_swLDA_test[1:I + 10,]
+
+train <- rbind(SIM_train,SIM_ref_train,SIM_swLDA_train)
+test <- rbind(SIM_test,SIM_ref_test,SIM_swLDA_test)
+
+train$Legend <- factor(train$Legend, levels = c("SMGP", "BLDA", "swLDA"))
+test$Legend <- factor(test$Legend, levels = c("SMGP", "BLDA", "swLDA"))
+
+train <- train %>% group_by(Legend) %>% mutate(Index = row_number())
+test <- test %>% group_by(Legend) %>% mutate(Index = row_number())
+
+p <- ggplot(train, aes(x = Index, y = V1, color = Legend)) +
+  geom_line(size = 1.5) +  # 绘制折线
+  geom_point(shape = 21, size = 3, fill = "white", stroke = 1.5) + # 圆圈标记
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2)) + # 设置Y轴
+  scale_x_continuous(limits = c(1, I), breaks = seq(1, I, by = 1)) + # 设置X轴
+  geom_hline(yintercept = 0.8, linetype = "dashed", color = "black") + # Y=0.8 虚线
+  geom_hline(yintercept = 0.9, linetype = "dashed", color = "black") + # Y=0.9 虚线
+  labs(title = "Training Character-level Accuracy",
+       x = "Number of Sequence",
+       y = "") +
+  theme_bw() +
+  theme( panel.grid.major = element_blank(),
+         panel.grid.minor = element_blank(),
+         
+         axis.text = element_text(size = 30),
+         axis.title = element_text(size = 30),
+         legend.position = c(1, 0),  # 调整图例位置到右下角
+         legend.justification = c(1, 0),  # 调整图例位置到右下角
+         legend.background = element_rect(fill = NA),
+         plot.background = element_rect(fill = "white", color = NA),
+         plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+         legend.text = element_text(size = 22),  # 放大图例文本
+         legend.title = element_blank()) +
+  guides(color = guide_legend(keywidth = unit(1.5, "cm"), keyheight = unit(1.5, "cm")))  # 修改图例形状和大小
+ggsave(paste0(SIM_multi_path, "/train_acc.png"),plot = p, width = 13, height = 10)
+
+b <- ggplot(test, aes(x = Index, y = V1, color = Legend)) +
+  geom_line(size = 1.5) +  # 绘制折线
+  geom_point(shape = 21, size = 3, fill = "white", stroke = 1.5) + # 圆圈标记
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2)) + # 设置Y轴
+  scale_x_continuous(limits = c(1, I + 10), breaks = seq(1, I + 10, by = 1)) + # 设置X轴
+  geom_hline(yintercept = 0.8, linetype = "dashed", color = "black") + # Y=0.8 虚线
+  geom_hline(yintercept = 0.9, linetype = "dashed", color = "black") + # Y=0.9 虚线
+  labs(title = "Testing Character-level Accuracy",
+       x = "Number of Sequence",
+       y = "") +
+  theme_bw() +
+  theme( panel.grid.major = element_blank(),
+         panel.grid.minor = element_blank(),
+         
+         axis.text = element_text(size = 30),
+         axis.title = element_text(size = 30),
+         legend.position = c(1, 0),  # 调整图例位置到右下角
+         legend.justification = c(1, 0),  # 调整图例位置到右下角
+         legend.background = element_rect(fill = NA),
+         plot.background = element_rect(fill = "white", color = NA),
+         plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+         legend.text = element_text(size = 22),  # 放大图例文本
+         legend.title = element_blank()) +
+  guides(color = guide_legend(keywidth = unit(1.5, "cm"), keyheight = unit(1.5, "cm")))  # 修改图例形状和大小
+ggsave(paste0(SIM_multi_path, "/test_acc.png"),plot = b, width = 13, height = 10)
+
+SIM_zeta_1 <- read.csv(paste0(SIM_multi_path, "/zeta_1.csv"),header = T)
+SIM_zeta_2 <- read.csv(paste0(SIM_multi_path, "/zeta_2.csv"),header = T)
+
+SIM_beta_1 <- read.csv(paste0(SIM_multi_path, "/beta_1.csv"),header = T) %>%
+  select(-Channel)
+SIM_beta_1_long <- SIM_beta_1 %>%
+  pivot_longer(
+    cols = -c(Time),
+    names_to = c("Beta", ".value"),
+    names_pattern = "Beta_(\\d+)_(min|mean|max|true)"
+  ) %>%
+  mutate(
+    Beta = factor(Beta,
+                  levels = c("1", "0"),
+                  labels = c("target", "non-target")
+    )
+  )
+
+SIM_beta_2 <- read.csv(paste0(SIM_multi_path, "/beta_2.csv"),header = T) %>%
+  select(-Channel)
+SIM_beta_2_long <- SIM_beta_2 %>%
+  pivot_longer(
+    cols = -c(Time),
+    names_to = c("Beta", ".value"),
+    names_pattern = "Beta_(\\d+)_(min|mean|max|true)"
+  ) %>%
+  mutate(
+    Beta = factor(Beta,
+                  levels = c("1", "0"),
+                  labels = c("target", "non-target")
+    )
+  )
+
+SIM_ref_beta_1 <- read.csv(paste0(SIM_multi_ref_path, "/beta_1.csv"),header = T) %>%
+  select(-Channel)
+SIM_ref_beta_1_long <- SIM_ref_beta_1 %>%
+  pivot_longer(
+    cols = -c(Time),
+    names_to = c("Beta", ".value"),
+    names_pattern = "Beta_(\\d+)_(min|mean|max|true)"
+  ) %>%
+  mutate(
+    Beta = factor(Beta,
+                  levels = c("1", "0"),
+                  labels = c("target", "non-target")
+    )
+  )
+
+SIM_ref_beta_2 <- read.csv(paste0(SIM_multi_ref_path, "/beta_2.csv"),header = T) %>%
+  select(-Channel)
+SIM_ref_beta_2_long <- SIM_ref_beta_2 %>%
+  pivot_longer(
+    cols = -c(Time),
+    names_to = c("Beta", ".value"),
+    names_pattern = "Beta_(\\d+)_(min|mean|max|true)"
+  ) %>%
+  mutate(
+    Beta = factor(Beta,
+                  levels = c("1", "0"),
+                  labels = c("target", "non-target")
+    )
+  )
+
+p <- ggplot(SIM_zeta_1, aes(x = Time)) + 
+  # geom_ribbon(aes(ymin = pmax(Zeta_min, 0), ymax = pmin(Zeta_max, 1), fill = "Zeta 95% Credible Interval"), alpha = 0.2) +
+  geom_line(aes(y = Zeta_mean, color = "Zeta Mean"),linewidth = 1.5) +
+  geom_point(aes(y = Zeta_mean), shape = 21, size = 3, fill = "white", stroke = 1.5) +
+  geom_line(aes(y = Zeta_true, color = "Zeta True"), linetype = "dashed",linewidth = 1.5) +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2)) +
+  geom_hline(yintercept = 0.8, linetype = "dashed", color = "black") +
+  scale_color_manual(values = c("Zeta Mean" = "blue", "Zeta True" = "red")) +
+  # scale_fill_manual(values = c("Zeta 95% Credible Interval" = "blue")) +  # 更改为灰色以确保可见性
+  labs(title = "Zeta Estimation for Channel 1",
+       x = "ms",
+       y = "",
+       color = "",
+       fill = "") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 30),
+        axis.title = element_text(size = 30),
+        legend.position = "top",
+        legend.background = element_rect(fill = "white"),
+        plot.background = element_rect(fill = "white", color = NA),
+        plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        legend.text = element_text(size = 22))
+
+ggsave(paste0(SIM_multi_path, "/zeta_1.png"),plot = p, width = 13, height = 10, dpi = 600)
+
+p <- ggplot(SIM_zeta_2, aes(x = Time)) + 
+  # geom_ribbon(aes(ymin = pmax(Zeta_min, 0), ymax = pmin(Zeta_max, 1), fill = "Zeta 95% Credible Interval"), alpha = 0.2) +
+  geom_line(aes(y = Zeta_mean, color = "Zeta Mean"),linewidth = 1.5) +
+  geom_point(aes(y = Zeta_mean), shape = 21, size = 3, fill = "white", stroke = 1.5) +
+  geom_line(aes(y = Zeta_true, color = "Zeta True"), linetype = "dashed",linewidth = 1.5) +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2)) +
+  geom_hline(yintercept = 0.8, linetype = "dashed", color = "black") +
+  scale_color_manual(values = c("Zeta Mean" = "blue", "Zeta True" = "red")) +
+  # scale_fill_manual(values = c("Zeta 95% Credible Interval" = "blue")) +  # 更改为灰色以确保可见性
+  labs(title = "Zeta Estimation for Channel 2",
+       x = "ms",
+       y = "",
+       color = "",
+       fill = "") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.text = element_text(size = 30),
+        axis.title = element_text(size = 30),
+        legend.position = "top",
+        legend.background = element_rect(fill = "white"),
+        plot.background = element_rect(fill = "white", color = NA),
+        plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+        legend.text = element_text(size = 22))
+
+ggsave(paste0(SIM_multi_path, "/zeta_2.png"),plot = p, width = 13, height = 10, dpi = 600)
+
+# create plot for beta_1
+p <- ggplot(SIM_beta_1_long, aes(x = Time)) +
+  geom_ribbon(
+    aes(ymin = min, ymax = max, fill = Beta),
+    alpha = 0.35,
+    color = NA
+  ) +
+  geom_line(
+    aes(y = mean, color = Beta),
+    linewidth = 1.2
+  ) +
+  # true line
+  geom_line(
+    aes(y = true, 
+        color = Beta),
+    linetype = "dashed",
+    linewidth = 1.2,
+    show.legend = FALSE
+  ) +
+  geom_point(
+    aes(y = mean, color = Beta),
+    shape = 21,          
+    size = 2,           
+    fill = "white",      
+    stroke = 1.5,        
+    alpha = 0.8          
+  ) +
+  # point color
+  scale_color_manual(
+    name = "Condition",
+    values = c("target" = "red", "non-target" = "blue"),
+    guide = guide_legend(override.aes = list(
+      linetype = c(1, 1),  
+      shape = c(21, 21),   
+      fill = c("white", "white")  
+    ))
+  ) +
+  # line color
+  scale_color_manual(
+    values = c("target" = "red", "non-target" = "blue")
+  ) +
+  scale_fill_manual(
+    values = c("target" = "red", "non-target" = "blue")
+  ) +
+  scale_x_continuous(
+    name = "Time (ms)",
+    breaks = seq(0, 1000, 200),
+    expand = expansion(mult = c(0.03, 0.03))
+  ) +
+  scale_y_continuous(
+    name = "Channel 1",
+    limits = c(-1, 2),
+    breaks = seq(-1, 2, 1)
+  ) +
+  # theme settings
+  theme(
+    # axis
+    axis.title.x = element_text(size = 25, margin = margin(t = 5)),
+    axis.title.y = element_text(size = 25, margin = margin(r = 5)),
+    axis.text = element_text(size = 25, color = "gray30"),
+    
+    # legend
+    legend.position = c(1, 1),
+    legend.box = "vertical",
+    legend.direction = "vertical",
+    legend.justification = c(1, 1),
+    legend.background = element_blank(), 
+    legend.key = element_blank(),   
+    legend.spacing.x = unit(1, "cm"),  
+    legend.text = element_text(size = 25),
+    legend.title = element_blank(),
+    
+    # margins
+    plot.margin = margin(t = 30, r = 30, l = 30, b = 30, unit = "pt"),  
+    panel.grid.major = element_line(color = "white", linewidth = 0.3),
+    plot.background = element_rect(fill = "white", color = NA)
+  ) +
+  coord_cartesian(xlim = c(0, 1000))  
+
+# save plot
+ggsave(
+  paste0(SIM_multi_path, "/beta_1.png"),
+  plot = p,
+  width = 13,
+  height = 10,
+  dpi = 600,
+  bg = "white"
+)
+
+# delete plot
+rm(p)
+
+# create plot for beta_2
+p <- ggplot(SIM_beta_2_long, aes(x = Time)) +
+  geom_ribbon(
+    aes(ymin = min, ymax = max, fill = Beta),
+    alpha = 0.35,
+    color = NA
+  ) +
+  geom_line(
+    aes(y = mean, color = Beta),
+    linewidth = 1.2
+  ) +
+  # true line
+  geom_line(
+    aes(y = true, 
+        color = Beta),
+    linetype = "dashed",
+    linewidth = 1.2,
+    show.legend = FALSE
+  ) +
+  geom_point(
+    aes(y = mean, color = Beta),
+    shape = 21,          
+    size = 2,           
+    fill = "white",      
+    stroke = 1.5,        
+    alpha = 0.8          
+  ) +
+  # point color
+  scale_color_manual(
+    name = "Condition",
+    values = c("target" = "red", "non-target" = "blue"),
+    guide = guide_legend(override.aes = list(
+      linetype = c(1, 1),  
+      shape = c(21, 21),   
+      fill = c("white", "white")  
+    ))
+  ) +
+  # line color
+  scale_color_manual(
+    values = c("target" = "red", "non-target" = "blue")
+  ) +
+  scale_fill_manual(
+    values = c("target" = "red", "non-target" = "blue")
+  ) +
+  scale_x_continuous(
+    name = "Time (ms)",
+    breaks = seq(0, 1000, 200),
+    expand = expansion(mult = c(0.03, 0.03))
+  ) +
+  scale_y_continuous(
+    name = "Channel 2",
+    limits = c(-1, 2),
+    breaks = seq(-1, 2, 1)
+  ) +
+  # theme settings
+  theme(
+    # axis
+    axis.title.x = element_text(size = 25, margin = margin(t = 5)),
+    axis.title.y = element_text(size = 25, margin = margin(r = 5)),
+    axis.text = element_text(size = 25, color = "gray30"),
+    
+    # legend
+    legend.position = c(1, 1),
+    legend.box = "vertical",
+    legend.direction = "vertical",
+    legend.justification = c(1, 1),
+    legend.background = element_blank(), 
+    legend.key = element_blank(),   
+    legend.spacing.x = unit(1, "cm"),  
+    legend.text = element_text(size = 25),
+    legend.title = element_blank(),
+    
+    # margins
+    plot.margin = margin(t = 30, r = 30, l = 30, b = 30, unit = "pt"),  
+    panel.grid.major = element_line(color = "white", linewidth = 0.3),
+    plot.background = element_rect(fill = "white", color = NA)
+  ) +
+  coord_cartesian(xlim = c(0, 1000))  
+
+# save plot
+ggsave(
+  paste0(SIM_multi_path, "/beta_2.png"),
+  plot = p,
+  width = 13,
+  height = 10,
+  dpi = 600,
+  bg = "white"
+)
+
+# delete plot
+rm(p)
+
+# create plot for ref beta_1
+p <- ggplot(SIM_ref_beta_1_long, aes(x = Time)) +
+  geom_ribbon(
+    aes(ymin = min, ymax = max, fill = Beta),
+    alpha = 0.35,
+    color = NA
+  ) +
+  geom_line(
+    aes(y = mean, color = Beta),
+    linewidth = 1.2
+  ) +
+  # true line
+  geom_line(
+    aes(y = true, 
+        color = Beta),
+    linetype = "dashed",
+    linewidth = 1.2,
+    show.legend = FALSE
+  ) +
+  geom_point(
+    aes(y = mean, color = Beta),
+    shape = 21,          
+    size = 2,           
+    fill = "white",      
+    stroke = 1.5,        
+    alpha = 0.8          
+  ) +
+  # point color
+  scale_color_manual(
+    name = "Condition",
+    values = c("target" = "red", "non-target" = "blue"),
+    guide = guide_legend(override.aes = list(
+      linetype = c(1, 1),  
+      shape = c(21, 21),   
+      fill = c("white", "white")  
+    ))
+  ) +
+  # line color
+  scale_color_manual(
+    values = c("target" = "red", "non-target" = "blue")
+  ) +
+  scale_fill_manual(
+    values = c("target" = "red", "non-target" = "blue")
+  ) +
+  scale_x_continuous(
+    name = "Time (ms)",
+    breaks = seq(0, 1000, 200),
+    expand = expansion(mult = c(0.03, 0.03))
+  ) +
+  scale_y_continuous(
+    name = "Channel 1",
+    limits = c(-1, 2),
+    breaks = seq(-1, 2, 1)
+  ) +
+  # theme settings
+  theme(
+    # axis
+    axis.title.x = element_text(size = 25, margin = margin(t = 5)),
+    axis.title.y = element_text(size = 25, margin = margin(r = 5)),
+    axis.text = element_text(size = 25, color = "gray30"),
+    
+    # legend
+    legend.position = c(1, 1),
+    legend.box = "vertical",
+    legend.direction = "vertical",
+    legend.justification = c(1, 1),
+    legend.background = element_blank(), 
+    legend.key = element_blank(),   
+    legend.spacing.x = unit(1, "cm"),  
+    legend.text = element_text(size = 25),
+    legend.title = element_blank(),
+    
+    # margins
+    plot.margin = margin(t = 30, r = 30, l = 30, b = 30, unit = "pt"),  
+    panel.grid.major = element_line(color = "white", linewidth = 0.3),
+    plot.background = element_rect(fill = "white", color = NA)
+  ) +
+  coord_cartesian(xlim = c(0, 1000))  
+
+# save plot
+ggsave(
+  paste0(SIM_multi_ref_path, "/beta_1.png"),
+  plot = p,
+  width = 13,
+  height = 10,
+  dpi = 600,
+  bg = "white"
+)
+
+# delete plot
+rm(p)
+
+# create plot for ref beta_2
+p <- ggplot(SIM_ref_beta_2_long, aes(x = Time)) +
+  geom_ribbon(
+    aes(ymin = min, ymax = max, fill = Beta),
+    alpha = 0.35,
+    color = NA
+  ) +
+  geom_line(
+    aes(y = mean, color = Beta),
+    linewidth = 1.2
+  ) +
+  # true line
+  geom_line(
+    aes(y = true, 
+        color = Beta),
+    linetype = "dashed",
+    linewidth = 1.2,
+    show.legend = FALSE
+  ) +
+  geom_point(
+    aes(y = mean, color = Beta),
+    shape = 21,          
+    size = 2,           
+    fill = "white",      
+    stroke = 1.5,        
+    alpha = 0.8          
+  ) +
+  # point color
+  scale_color_manual(
+    name = "Condition",
+    values = c("target" = "red", "non-target" = "blue"),
+    guide = guide_legend(override.aes = list(
+      linetype = c(1, 1),  
+      shape = c(21, 21),   
+      fill = c("white", "white")  
+    ))
+  ) +
+  # line color
+  scale_color_manual(
+    values = c("target" = "red", "non-target" = "blue")
+  ) +
+  scale_fill_manual(
+    values = c("target" = "red", "non-target" = "blue")
+  ) +
+  scale_x_continuous(
+    name = "Time (ms)",
+    breaks = seq(0, 1000, 200),
+    expand = expansion(mult = c(0.03, 0.03))
+  ) +
+  scale_y_continuous(
+    name = "Channel 2",
+    limits = c(-1, 2),
+    breaks = seq(-1, 2, 1)
+  ) +
+  # theme settings
+  theme(
+    # axis
+    axis.title.x = element_text(size = 25, margin = margin(t = 5)),
+    axis.title.y = element_text(size = 25, margin = margin(r = 5)),
+    axis.text = element_text(size = 25, color = "gray30"),
+    
+    # legend
+    legend.position = c(1, 1),
+    legend.box = "vertical",
+    legend.direction = "vertical",
+    legend.justification = c(1, 1),
+    legend.background = element_blank(), 
+    legend.key = element_blank(),   
+    legend.spacing.x = unit(1, "cm"),  
+    legend.text = element_text(size = 25),
+    legend.title = element_blank(),
+    
+    # margins
+    plot.margin = margin(t = 30, r = 30, l = 30, b = 30, unit = "pt"),  
+    panel.grid.major = element_line(color = "white", linewidth = 0.3),
+    plot.background = element_rect(fill = "white", color = NA)
+  ) +
+  coord_cartesian(xlim = c(0, 1000))  
+
+# save plot
+ggsave(
+  paste0(SIM_multi_ref_path, "/beta_2.png"),
+  plot = p,
+  width = 13,
+  height = 10,
+  dpi = 600,
+  bg = "white"
+)
+
+# delete plot
+rm(p)
+
